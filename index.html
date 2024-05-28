@@ -155,6 +155,19 @@
             }
         }
 
+        function handleTouchStart(e) {
+            const touchX = e.touches[0].clientX;
+            if (touchX > player.x + player.width / 2) {
+                player.dx = player.speed;
+            } else {
+                player.dx = -player.speed;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            player.dx = 0;
+        }
+
         function startGame() {
             menu.style.display = 'none';
             gameOverScreen.style.display = 'none';
@@ -218,6 +231,8 @@
 
         document.addEventListener('keydown', keyDown);
         document.addEventListener('keyup', keyUp);
+        canvas.addEventListener('touchstart', handleTouchStart, false);
+        canvas.addEventListener('touchend', handleTouchEnd, false);
 
         menu.style.display = 'flex';
         gameOverScreen.style.display = 'none';
