@@ -11,6 +11,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
             height: 100vh;
             background-color: #f0f0f0;
         }
@@ -32,6 +33,16 @@
         #pointsDisplay {
             margin: 10px;
             font-size: 18px;
+        }
+        #controls {
+            display: none;
+            flex-direction: row;
+            margin-top: 10px;
+        }
+        #controls button {
+            width: 100px;
+            height: 50px;
+            font-size: 24px;
         }
     </style>
 </head>
@@ -55,6 +66,10 @@
         <button onclick="goToMenu()">Return to Menu</button>
     </div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="controls">
+        <button id="leftBtn" onmousedown="moveLeft()" onmouseup="stopMove()" ontouchstart="moveLeft()" ontouchend="stopMove()">Left</button>
+        <button id="rightBtn" onmousedown="moveRight()" onmouseup="stopMove()" ontouchstart="moveRight()" ontouchend="stopMove()">Right</button>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -63,12 +78,16 @@
         const finalScore = document.getElementById('finalScore');
         const shop = document.getElementById('shop');
         const pointsDisplay = document.getElementById('pointsDisplay');
+        const controls = document.getElementById('controls');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
 
         let playerColor = 'blue';
         let fallingObjectColor = 'red';
         let player = { x: canvas.width / 2 - 25, y: canvas.height - 50, width: 50, height: 50, speed: 10, dx: 0 };
         let fallingObject = { x: Math.random() * (canvas.width - 20), y: 0, width: 20, height: 20, speed: 3 };
-        let score = 0;
+        let score = parseInt(localStorage.getItem('score')) || 0;
+        let sessionScore = 0;
         let misses = 0;
         let inShop = false;
 
@@ -111,7 +130,7 @@
                 player.y < fallingObject.y + fallingObject.height &&
                 player.y + player.height > fallingObject.y
             ) {
-                score++;
+                sessionScore++;
                 updatePointsDisplay();
                 fallingObject.y = 0;
                 fallingObject.x = Math.random() * (canvas.width - fallingObject.width);
@@ -155,16 +174,15 @@
             }
         }
 
-        function handleTouchStart(e) {
-            const touchX = e.touches[0].clientX;
-            if (touchX > player.x + player.width / 2) {
-                player.dx = player.speed;
-            } else {
-                player.dx = -player.speed;
-            }
+        function moveLeft() {
+            player.dx = -player.speed;
         }
 
-        function handleTouchEnd(e) {
+        function moveRight() {
+            player.dx = player.speed;
+        }
+
+        function stopMove() {
             player.dx = 0;
         }
 
@@ -173,7 +191,8 @@
             gameOverScreen.style.display = 'none';
             shop.style.display = 'none';
             canvas.style.display = 'block';
-            score = 0;
+            controls.style.display = 'flex';
+            sessionScore = 0;
             misses = 0;
             inShop = false;
             player.x = canvas.width / 2 - player.width / 2;
@@ -184,9 +203,12 @@
 
         function gameOver() {
             inShop = true;
+            score += sessionScore;
+            localStorage.setItem('score', score);
             canvas.style.display = 'none';
+            controls.style.display = 'none';
             gameOverScreen.style.display = 'flex';
-            finalScore.textContent = 'Your score: ' + score;
+            finalScore.textContent = 'Your score: ' + sessionScore;
         }
 
         function restartGame() {
@@ -203,6 +225,7 @@
             menu.style.display = 'none';
             gameOverScreen.style.display = 'none';
             canvas.style.display = 'none';
+            controls.style.display = 'none';
             shop.style.display = 'flex';
             updatePointsDisplay();
         }
@@ -231,13 +254,26 @@
 
         document.addEventListener('keydown', keyDown);
         document.addEventListener('keyup', keyUp);
-        canvas.addEventListener('touchstart', handleTouchStart, false);
-        canvas.addEventListener('touchend', handleTouchEnd, false);
 
         menu.style.display = 'flex';
         gameOverScreen.style.display = 'none';
         shop.style.display = 'none';
         canvas.style.display = 'none';
+
+        // For mobile controls
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            if (e.touches[0].clientX < canvas.width / 2) {
+                moveLeft();
+            } else {
+                moveRight();
+            }
+        }, false);
+
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            stopMove();
+        }, false);
     </script>
 </body>
 </html>
