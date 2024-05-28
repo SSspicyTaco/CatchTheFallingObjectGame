@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Falling Object Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #gameCanvas {
+            display: none;
+            border: 1px solid #000;
+            background-color: #87CEEB;
+        }
+        #menu, #gameOver, #shop {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        #pointsDisplay {
+            margin: 10px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h1>Catch the Falling Object Game</h1>
+        <button onclick="startGame()">Start Game</button>
+        <button onclick="openShop()">Shop</button>
+    </div>
+    <div id="shop" style="display: none;">
+        <h1>Shop</h1>
+        <div id="pointsDisplay">Points: 0</div>
+        <button onclick="changeColor('player')">Change Player Color (10 points)</button>
+        <button onclick="changeColor('fallingObject')">Change Falling Object Color (10 points)</button>
+        <button onclick="goBack()">Back</button>
+    </div>
+    <div id="gameOver" style="display: none;">
+        <h1>Game Over</h1>
+        <p id="finalScore"></p>
+        <button onclick="restartGame()">Restart Game</button>
+        <button onclick="goToMenu()">Return to Menu</button>
+    </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menu = document.getElementById('menu');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScore = document.getElementById('finalScore');
+        const shop = document.getElementById('shop');
+        const pointsDisplay = document.getElementById('pointsDisplay');
+
+        let playerColor = 'blue';
+        let fallingObjectColor = 'red';
+        let player = { x: canvas.width / 2 - 25, y: canvas.height - 50, width: 50, height: 50, speed: 10, dx: 0 };
+        let fallingObject = { x: Math.random() * (canvas.width - 20), y: 0, width: 20, height: 20, speed: 3 };
+        let score = 0;
+        let misses = 0;
+        let inShop = false;
+
+        function drawPlayer() {
+            ctx.fillStyle = playerColor;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawFallingObject() {
+            ctx.fillStyle = fallingObjectColor;
+            ctx.fillRect(fallingObject.x, fallingObject.y, fallingObject.width, fallingObject.height);
+        }
+
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function newPos() {
+            player.x += player.dx;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+        }
+
+        function moveFallingObject() {
+            fallingObject.y += fallingObject.speed;
+            if (fallingObject.y + fallingObject.height > canvas.height) {
+                fallingObject.y = 0;
+                fallingObject.x = Math.random() * (canvas.width - fallingObject.width);
+                misses++;
+                if (misses >= 5) {
+                    gameOver();
+                }
+            }
+        }
+
+        function detectCollision() {
+            if (
+                player.x < fallingObject.x + fallingObject.width &&
+                player.x + player.width > fallingObject.x &&
+                player.y < fallingObject.y + fallingObject.height &&
+                player.y + player.height > fallingObject.y
+            ) {
+                score++;
+                updatePointsDisplay();
+                fallingObject.y = 0;
+                fallingObject.x = Math.random() * (canvas.width - fallingObject.width);
+            }
+        }
+
+        function updatePointsDisplay() {
+            pointsDisplay.textContent = `Points: ${score}`;
+        }
+
+        function updateGameInfo() {
+            ctx.fillStyle = 'black';
+            ctx.font = '18px Arial';
+            ctx.fillText(`Points: ${score}`, 10, 20);
+            ctx.fillText(`Lives: ${5 - misses}`, 10, 40);
+        }
+
+        function update() {
+            if (inShop) return;
+            clear();
+            drawPlayer();
+            drawFallingObject();
+            newPos();
+            moveFallingObject();
+            detectCollision();
+            updateGameInfo();
+            requestAnimationFrame(update);
+        }
+
+        function keyDown(e) {
+            if (e.key === 'ArrowRight' || e.key === 'Right') {
+                player.dx = player.speed;
+            } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
+                player.dx = -player.speed;
+            }
+        }
+
+        function keyUp(e) {
+            if (e.key === 'ArrowRight' || e.key === 'Right' || e.key === 'ArrowLeft' || e.key === 'Left') {
+                player.dx = 0;
+            }
+        }
+
+        function startGame() {
+            menu.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            shop.style.display = 'none';
+            canvas.style.display = 'block';
+            score = 0;
+            misses = 0;
+            inShop = false;
+            player.x = canvas.width / 2 - player.width / 2;
+            fallingObject.y = 0;
+            updatePointsDisplay();
+            update();
+        }
+
+        function gameOver() {
+            inShop = true;
+            canvas.style.display = 'none';
+            gameOverScreen.style.display = 'flex';
+            finalScore.textContent = 'Your score: ' + score;
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function goToMenu() {
+            gameOverScreen.style.display = 'none';
+            menu.style.display = 'flex';
+        }
+
+        function openShop() {
+            inShop = true;
+            menu.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            canvas.style.display = 'none';
+            shop.style.display = 'flex';
+            updatePointsDisplay();
+        }
+
+        function changeColor(target) {
+            if (score >= 10) {
+                score -= 10;
+                updatePointsDisplay();
+                const newColor = prompt(`Enter the new color for the ${target} (e.g., 'red', '#FF0000'):`);
+                if (newColor) {
+                    if (target === 'player') {
+                        playerColor = newColor;
+                    } else if (target === 'fallingObject') {
+                        fallingObjectColor = newColor;
+                    }
+                }
+            } else {
+                alert('Not enough points! You need 10 points to buy this item.');
+            }
+        }
+
+        function goBack() {
+            shop.style.display = 'none';
+            menu.style.display = 'flex';
+        }
+
+        document.addEventListener('keydown', keyDown);
+        document.addEventListener('keyup', keyUp);
+
+        menu.style.display = 'flex';
+        gameOverScreen.style.display = 'none';
+        shop.style.display = 'none';
+        canvas.style.display = 'none';
+    </script>
+</body>
+</html>
